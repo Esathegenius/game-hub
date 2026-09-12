@@ -9,18 +9,36 @@
 <body>
   <header class="topbar">
     <a class="brand" href="index.html">🎮 Game Hub</a>
-    <a class="admin-link" href="admin.html">Admin</a>
+    <div id="accountArea" class="account-area hidden">
+      <span id="accountEmail" class="muted"></span>
+      <a class="admin-link" href="admin.html">Admin</a>
+      <button id="logout" class="secondary small-button">Log out</button>
+    </div>
   </header>
 
   <main class="container">
-    <section class="hero">
-      <p class="eyebrow">MY GAME COLLECTION</p>
-      <h1>Pick a game. Download. Play.</h1>
-      <p>Games made for our class.</p>
+    <section id="loginPanel" class="panel login-panel">
+      <p class="eyebrow">CLASS GAME HUB</p>
+      <h1>Welcome 👋</h1>
+      <p class="muted">Sign in with your class account to access the games.</p>
+      <form id="loginForm">
+        <label>Email<input id="email" type="email" required autocomplete="username"></label>
+        <label>Password<input id="password" type="password" required autocomplete="current-password"></label>
+        <button type="submit">Sign in</button>
+      </form>
+      <p id="loginMessage" class="message"></p>
     </section>
 
-    <div id="status" class="status">Loading games…</div>
-    <section id="games" class="grid"></section>
+    <section id="gameArea" class="hidden">
+      <section class="hero">
+        <p class="eyebrow">MY GAME COLLECTION</p>
+        <h1>Pick a game. Download. Play.</h1>
+        <p>Games made for our class.</p>
+      </section>
+
+      <div id="status" class="status">Loading games…</div>
+      <section id="games" class="grid"></section>
+    </section>
   </main>
 
   <script type="module" src="app.js"></script>
