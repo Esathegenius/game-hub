@@ -35,12 +35,14 @@ async function showSession() {
   accountArea.classList.remove("hidden");
   accountEmail.textContent = session.user.email || "Signed in";
   loginMessage.textContent = "";
+
   loadGames();
   startChatPolling();
 }
 
 loginForm.addEventListener("submit", async (e) => {
   e.preventDefault();
+
   loginMessage.textContent = "Signing in…";
 
   const { error } = await supabase.auth.signInWithPassword({
@@ -49,7 +51,8 @@ loginForm.addEventListener("submit", async (e) => {
   });
 
   if (error) {
-    loginMessage.textContent = "Sign-in failed. Check your email and password.";
+    loginMessage.textContent =
+      "Sign-in failed. Check your email and password.";
     return;
   }
 
@@ -59,9 +62,12 @@ loginForm.addEventListener("submit", async (e) => {
 
 document.querySelector("#logout").addEventListener("click", async () => {
   stopChatPolling();
+
   await supabase.auth.signOut();
+
   gamesEl.innerHTML = "";
   messagesEl.innerHTML = "";
+
   await showSession();
 });
 
@@ -88,31 +94,55 @@ async function loadGames() {
   statusEl.textContent = "";
 
   const cards = [];
+
   for (const game of data) {
     let image = "";
+
     if (game.image_path) {
       const result = await supabase.storage
         .from("game-images")
         .createSignedUrl(game.image_path, 3600);
-      if (!result.error) image = result.data.signedUrl;
+
+      if (!result.error) {
+        image = result.data.signedUrl;
+      }
     }
 
     const zipResult = await supabase.storage
       .from("game-zips")
       .createSignedUrl(game.zip_path, 3600);
 
-    const zip = zipResult.error ? "" : zipResult.data.signedUrl;
+    const zip = zipResult.error
+      ? ""
+      : zipResult.data.signedUrl;
 
     cards.push(`
       <article class="card">
-        ${image ? `<img src="${escapeHtml(image)}" alt="">` : `<div class="card-placeholder"></div>`}
+        ${
+          image
+            ? `<img src="${escapeHtml(image)}" alt="">`
+            : `<div class="card-placeholder"></div>`
+        }
+
         <div class="card-body">
-          <div class="meta">v${escapeHtml(game.version || "1.0.0")}</div>
+          <div class="meta">
+            v${escapeHtml(game.version || "1.0.0")}
+          </div>
+
           <h2>${escapeHtml(game.name)}</h2>
+
           <p>${escapeHtml(game.description)}</p>
-          ${zip ? `<a class="download" href="${escapeHtml(zip)}" download>⬇ Download ZIP</a>` : `<span class="muted">Download unavailable</span>`}
+
+          ${
+            zip
+              ? `<a class="download" href="${escapeHtml(zip)}" download>
+                   ⬇ Download ZIP
+                 </a>`
+              : `<span class="muted">Download unavailable</span>`
+          }
         </div>
-      </article>`);
+      </article>
+    `);
   }
 
   gamesEl.innerHTML = cards.join("");
@@ -135,40 +165,69 @@ async function loadMessages() {
 
   chatStatus.textContent = "Online";
 
-  const signature = data.map(m => `${m.id}:${m.content}:${m.created_at}`).join("|");
-  if (signature === lastMessageSignature) return;
+  const signature = data
+    .map(m => `${m.id}:${m.content}:${m.created_at}`)
+    .join("|");
+
+  if (signature === lastMessageSignature) {
+    return;
+  }
+
   lastMessageSignature = signature;
 
-  messagesEl.innerHTML = data.map(message => {
-    const mine = message.user_id === currentUser.id;
-    const sender = mine ? "You" : (message.sender_email || "Classmate");
-    const time = new Date(message.created_at).toLocaleString([], {
-      hour: "numeric", minute: "2-digit"
-    });
-    return `
-      <article class="message-bubble ${mine ? "mine" : ""}">
-        <div class="message-meta"><strong>${sender}</strong><span>${time}</span></div>
-        <div class="message-content">${escapeHtml(message.content)}</div>
-      </article>`;
-  }).join("");
+  messagesEl.innerHTML = data
+    .map(message => {
+      const mine = message.user_id === currentUser.id;
+
+      const sender =
+        mine
+          ? "You"
+          : (message.sender_email || "Classmate");
+
+      const time = new Date(
+        message.created_at
+      ).toLocaleString([], {
+        hour: "numeric",
+        minute: "2-digit"
+      });
+
+      return `
+        <article class="message-bubble ${mine ? "mine" : ""}">
+          <div class="message-meta">
+            <strong>${escapeHtml(sender)}</strong>
+            <span>${time}</span>
+          </div>
+
+          <div class="message-content">
+            ${escapeHtml(message.content)}
+          </div>
+        </article>
+      `;
+    })
+    .join("");
 
   messagesEl.scrollTop = messagesEl.scrollHeight;
 }
 
 chatForm.addEventListener("submit", async (e) => {
   e.preventDefault();
+
   if (!currentUser) return;
 
   const content = messageInput.value.trim();
+
   if (!content) return;
 
   messageInput.disabled = true;
   chatStatus.textContent = "Sending…";
 
-  const { error } = await supabase.from("messages").insert({
-    user_id: currentUser.id,
-    content
-  });
+  const { error } = await supabase
+    .from("messages")
+    .insert({
+      user_id: currentUser.id,
+      sender_email: currentUser.email,
+      content: content
+    });
 
   messageInput.disabled = false;
 
@@ -180,28 +239,49 @@ chatForm.addEventListener("submit", async (e) => {
 
   messageInput.value = "";
   lastMessageSignature = "";
+
   await loadMessages();
+
   messageInput.focus();
 });
 
 function startChatPolling() {
   stopChatPolling();
+
   lastMessageSignature = "";
+
   loadMessages();
-  chatTimer = setInterval(loadMessages, 2500);
+
+  chatTimer = setInterval(
+    loadMessages,
+    2500
+  );
 }
 
 function stopChatPolling() {
-  if (chatTimer) clearInterval(chatTimer);
+  if (chatTimer) {
+    clearInterval(chatTimer);
+  }
+
   chatTimer = null;
   lastMessageSignature = "";
 }
 
 function escapeHtml(value) {
-  return String(value ?? "").replace(/[&<>"']/g, c => ({
-    "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;", "'":"&#039;"
-  }[c]));
+  return String(value ?? "").replace(
+    /[&<>"']/g,
+    c => ({
+      "&": "&amp;",
+      "<": "&lt;",
+      ">": "&gt;",
+      '"': "&quot;",
+      "'": "&#039;"
+    }[c])
+  );
 }
 
-supabase.auth.onAuthStateChange(() => showSession());
+supabase.auth.onAuthStateChange(() => {
+  showSession();
+});
+
 showSession();
