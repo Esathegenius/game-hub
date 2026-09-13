@@ -123,7 +123,7 @@ async function loadMessages() {
 
   const { data, error } = await supabase
     .from("messages")
-    .select("id, user_id, content, created_at")
+    .select("id, user_id, sender_email, content, created_at")
     .order("created_at", { ascending: true })
     .limit(200);
 
@@ -141,7 +141,7 @@ async function loadMessages() {
 
   messagesEl.innerHTML = data.map(message => {
     const mine = message.user_id === currentUser.id;
-    const sender = mine ? "You" : "Classmate";
+    const sender = mine ? "You" : (message.sender_email || "Classmate");
     const time = new Date(message.created_at).toLocaleString([], {
       hour: "numeric", minute: "2-digit"
     });
