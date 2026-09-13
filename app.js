@@ -8,23 +8,35 @@ const loginForm = document.querySelector("#loginForm");
 const loginMessage = document.querySelector("#loginMessage");
 const gamesEl = document.querySelector("#games");
 const statusEl = document.querySelector("#status");
+const messagesEl = document.querySelector("#messages");
+const chatForm = document.querySelector("#chatForm");
+const messageInput = document.querySelector("#messageInput");
+const chatStatus = document.querySelector("#chatStatus");
+
+let currentUser = null;
+let chatTimer = null;
+let lastMessageSignature = "";
 
 async function showSession() {
   const { data: { session } } = await supabase.auth.getSession();
 
   if (!session) {
+    currentUser = null;
     loginPanel.classList.remove("hidden");
     gameArea.classList.add("hidden");
     accountArea.classList.add("hidden");
+    stopChatPolling();
     return;
   }
 
+  currentUser = session.user;
   loginPanel.classList.add("hidden");
   gameArea.classList.remove("hidden");
   accountArea.classList.remove("hidden");
   accountEmail.textContent = session.user.email || "Signed in";
   loginMessage.textContent = "";
   loadGames();
+  startChatPolling();
 }
 
 loginForm.addEventListener("submit", async (e) => {
@@ -46,8 +58,10 @@ loginForm.addEventListener("submit", async (e) => {
 });
 
 document.querySelector("#logout").addEventListener("click", async () => {
+  stopChatPolling();
   await supabase.auth.signOut();
   gamesEl.innerHTML = "";
+  messagesEl.innerHTML = "";
   await showSession();
 });
 
@@ -104,9 +118,88 @@ async function loadGames() {
   gamesEl.innerHTML = cards.join("");
 }
 
+async function loadMessages() {
+  if (!currentUser) return;
+
+  const { data, error } = await supabase
+    .from("messages")
+    .select("id, user_id, content, created_at")
+    .order("created_at", { ascending: true })
+    .limit(200);
+
+  if (error) {
+    chatStatus.textContent = "Chat unavailable";
+    console.error(error);
+    return;
+  }
+
+  chatStatus.textContent = "Online";
+
+  const signature = data.map(m => `${m.id}:${m.content}:${m.created_at}`).join("|");
+  if (signature === lastMessageSignature) return;
+  lastMessageSignature = signature;
+
+  messagesEl.innerHTML = data.map(message => {
+    const mine = message.user_id === currentUser.id;
+    const sender = mine ? "You" : "Classmate";
+    const time = new Date(message.created_at).toLocaleString([], {
+      hour: "numeric", minute: "2-digit"
+    });
+    return `
+      <article class="message-bubble ${mine ? "mine" : ""}">
+        <div class="message-meta"><strong>${sender}</strong><span>${time}</span></div>
+        <div class="message-content">${escapeHtml(message.content)}</div>
+      </article>`;
+  }).join("");
+
+  messagesEl.scrollTop = messagesEl.scrollHeight;
+}
+
+chatForm.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  if (!currentUser) return;
+
+  const content = messageInput.value.trim();
+  if (!content) return;
+
+  messageInput.disabled = true;
+  chatStatus.textContent = "Sending…";
+
+  const { error } = await supabase.from("messages").insert({
+    user_id: currentUser.id,
+    content
+  });
+
+  messageInput.disabled = false;
+
+  if (error) {
+    chatStatus.textContent = "Could not send";
+    console.error(error);
+    return;
+  }
+
+  messageInput.value = "";
+  lastMessageSignature = "";
+  await loadMessages();
+  messageInput.focus();
+});
+
+function startChatPolling() {
+  stopChatPolling();
+  lastMessageSignature = "";
+  loadMessages();
+  chatTimer = setInterval(loadMessages, 2500);
+}
+
+function stopChatPolling() {
+  if (chatTimer) clearInterval(chatTimer);
+  chatTimer = null;
+  lastMessageSignature = "";
+}
+
 function escapeHtml(value) {
   return String(value ?? "").replace(/[&<>"']/g, c => ({
-    "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
+    "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;", "'":"&#039;"
   }[c]));
 }
 

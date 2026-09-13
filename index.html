@@ -3,12 +3,12 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>My Games</title>
+  <title>Ball Run Download</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <header class="topbar">
-    <a class="brand" href="index.html">🎮 Game Hub</a>
+    <a class="brand" href="index.html">🎮 Ball Run Download</a>
     <div id="accountArea" class="account-area hidden">
       <span id="accountEmail" class="muted"></span>
       <a class="admin-link" href="admin.html">Admin</a>
@@ -20,7 +20,7 @@
     <section id="loginPanel" class="panel login-panel">
       <p class="eyebrow">CLASS GAME HUB</p>
       <h1>Welcome 👋</h1>
-      <p class="muted">Sign in with your class account to access the games.</p>
+      <p class="muted">Sign in with your class account to access the games and chat.</p>
       <form id="loginForm">
         <label>Email<input id="email" type="email" required autocomplete="username"></label>
         <label>Password<input id="password" type="password" required autocomplete="current-password"></label>
@@ -33,11 +33,27 @@
       <section class="hero">
         <p class="eyebrow">MY GAME COLLECTION</p>
         <h1>Ball Run Download</h1>
-        
+        <p>Games made for our class.</p>
       </section>
 
       <div id="status" class="status">Loading games…</div>
       <section id="games" class="grid"></section>
+
+      <section class="chat panel">
+        <div class="chat-header">
+          <div>
+            <p class="eyebrow">CLASS CHAT</p>
+            <h2>💬 Chat</h2>
+          </div>
+          <span id="chatStatus" class="muted">Connecting…</span>
+        </div>
+        <div id="messages" class="messages" aria-live="polite"></div>
+        <form id="chatForm" class="chat-form">
+          <input id="messageInput" maxlength="500" autocomplete="off" placeholder="Type a message…" required>
+          <button type="submit">Send</button>
+        </form>
+        <p class="chat-note">Messages are visible to everyone who can log in.</p>
+      </section>
     </section>
   </main>
 
